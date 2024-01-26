@@ -2,6 +2,8 @@ import os
 import json
 import music21 as m21
 from music21 import environment
+import numpy as np
+import tensorflow.keras as keras
 
 
 
@@ -181,7 +183,7 @@ def create_mapping(songs,mapping_path):
         json.dump(mappings,fp, indent=4)
 
 
-def convert_song_to_int(songs):
+def convert_songs_to_int(songs):
     int_songs = []
 
     #loading mappings
@@ -197,8 +199,31 @@ def convert_song_to_int(songs):
 
     return int_songs
 
-# def generate_training_sequences(sequence_length):
-#     # [11,12,13,14,...] -> i:[11,12], t:13; i:[12,13], t:14
+def generate_training_sequences(sequence_length):
+    # [11,12,13,14,...] -> i:[11,12], t:13; i:[12,13], t:14
+
+    # loading songs and mapping them to int
+    songs = load(SINGLE_FILE_DATASET)
+    int_songs = convert_songs_to_int(songs)
+    
+    # generating the training sequences
+    # eg : 100 symbols, 64 is sequence length , 100 - 64 = 36
+    inputs = []
+    targets = []
+
+    num_sequences = len(int_songs) - sequence_length
+    for i in range(num_sequences):
+        inputs.append(int_songs[i:i+sequence_length])
+        targets.append(int_songs[i+sequence_length])
+
+
+    # one-hot encoding the sequences
+    vocabulary_size = len(set(int_songs))
+    inputs = keras.utils.to_categorical(inputs,num_classes=vocabulary_size)
+    targets = np.array(targets)
+
+    return inputs, targets
+
 
 
 
@@ -208,6 +233,9 @@ def main():
     preprocess(KERN_DATASET_PATH)
     songs = create_single_file_dataset(SAVE_DIR,SINGLE_FILE_DATASET,SEQUENCE_LENGTH)
     create_mapping(songs,MAPPING_PATH)
+    inputs, targets = generate_training_sequences(SEQUENCE_LENGTH)
+    a = 1
+    
 
 
 if __name__ == "__main__":
