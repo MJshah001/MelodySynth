@@ -6,7 +6,6 @@ import numpy as np
 import tensorflow.keras as keras
 
 
-
 KERN_DATASET_PATH = "deutschl/test"
 SAVE_DIR = "dataset"
 SINGLE_FILE_DATASET = "file_dataset"
@@ -30,12 +29,13 @@ def load_songs_in_kern(dataset_path):
     Loads all kern pices in datasset using music21
 
     """
-
     songs = []
 
     # reading all files in dataset and loading them with music21
     for path, subdirs, files in os.walk(dataset_path):
         for file in files:
+
+            # consider only kern files
             if file[-3:] == "krn":
                 song = m21.converter.parse(os.path.join(path, file))
                 songs.append(song)
@@ -46,7 +46,8 @@ def has_acceptable_durations(song, acceptable_durations):
     Boolean that returns True if piece has all acceptable duration, False Otherwise
 
     """
-    for note in song.flat.notesAndRests:
+    # for event in song.flat.notesAndRests:   # flat is depriciated
+    for note in song.flatten().notesAndRests:
         if note.duration.quarterLength not in acceptable_durations:
             return False
     return True
@@ -59,7 +60,7 @@ def transpose(song):
     # getting key from the song         # if it is stored
     parts = song.getElementsByClass(m21.stream.Part)
     measures_part0 = parts[0].getElementsByClass(m21.stream.Measure)
-    key = measures_part0[0][4]          # if not we will estimate as follows
+    key = measures_part0[0][4]         # if not we will estimate as follows
 
     # estimating key using music21
     if not isinstance(key, m21.key.Key):
@@ -68,61 +69,54 @@ def transpose(song):
     print("Original Key : ", key)
     # getting interval got transposition
     if key.mode == "major":
-        interval = m21.interval.Interval(key.tonic , m21.pitch.Pitch("C"))
-
+        interval = m21.interval.Interval(key.tonic, m21.pitch.Pitch("C"))
     elif key.mode == "minor":
-        interval = m21.interval.Interval(key.tonic , m21.pitch.Pitch("A"))
+        interval = m21.interval.Interval(key.tonic, m21.pitch.Pitch("A"))
 
     # transposing song by calculated interval
-    transposed_song = song.transpose(interval)
-    
-
-    return transposed_song
+    tranposed_song = song.transpose(interval)
+    return tranposed_song
 
 
-def encode_song(song, time_step = 0.25):
+def encode_song(song, time_step=0.25):
     # p= 60 , d=1.0 -> ["60", "_","_","_" ]
     encoded_song = []
 
-    for event in song.flat.notesAndRests:
+    # for event in song.flat.notesAndRests:    # flat is depriciated
+    for event in song.flatten().notesAndRests:
 
-        #handling notes
-        if isinstance(event , m21.note.Note):
-            symbol = event.pitch.midi #60
-        #handling rests
+        # handling notes
+        if isinstance(event, m21.note.Note):
+            symbol = event.pitch.midi # 60
+        # handling rests
         elif isinstance(event, m21.note.Rest):
             symbol = "r"
 
         # converting note/rest into timeseries notation
         steps = int(event.duration.quarterLength / time_step)
         for step in range(steps):
-            if step == 0 :
+            if step == 0:
                 encoded_song.append(symbol)
-            else :
+            else:
                 encoded_song.append("_")
 
     # casting encoded song to a string
-
-    encoded_song = " ".join(map(str,encoded_song))
-
+    encoded_song = " ".join(map(str, encoded_song))
     return encoded_song
 
 
 
-
-
-
 def preprocess(dataset_path):
-
+    print("\n\n dataset_path",dataset_path,"\n\n")
     # loading Folk Songs
     print("Loading songs...")
     songs = load_songs_in_kern(dataset_path)
     print(f"Loaded {len(songs)} songs.")
 
-    for i,song in enumerate(songs):
+    for i, song in enumerate(songs):
 
         # filtering out songs that have non-acceptable durations
-        if not has_acceptable_durations(song,ACCEPTABLE_DURATIONS):
+        if not has_acceptable_durations(song, ACCEPTABLE_DURATIONS):
             continue
 
         # transposing Songs to Cmaj/Amin
@@ -132,35 +126,38 @@ def preprocess(dataset_path):
         encoded_song = encode_song(song)
 
         # save songs to text file
-        save_path = os.path.join(SAVE_DIR,str(i))
-        with open (save_path,"w") as fp:
+        save_path = os.path.join(SAVE_DIR, str(i))
+        with open(save_path, "w") as fp:
             fp.write(encoded_song)
 
 
-
 def load(file_path):
-    with open(file_path,"r") as fp:
-            song = fp.read() 
+    with open(file_path, "r") as fp:
+        song = fp.read()
     return song
 
-def create_single_file_dataset(dataset_path,file_dataset_path,sequence_length):
-    new_song_delimeter = "/ " * sequence_length
+
+def create_single_file_dataset(dataset_path, file_dataset_path, sequence_length):
+
+    new_song_delimiter = "/ " * sequence_length
     songs = ""
 
     #loading encoded songs and adding delimeter
-    for path , _ , files in os.walk(dataset_path):
+    for path, _, files in os.walk(dataset_path):
         for file in files:
-            file_path = os.path.join(path,file)
+            file_path = os.path.join(path, file)
             song = load(file_path)
-            songs = songs + song + " " + new_song_delimeter
-    
-    songs = songs [:-1]
+            songs = songs + song + " " + new_song_delimiter
 
-    #saving the whole strinng to the file
-    with open (file_dataset_path, "w") as fp :
+    # removing empty space from last character of string
+    songs = songs[:-1]
+
+    #saving the whole string to the file
+    with open(file_dataset_path, "w") as fp:
         fp.write(songs)
 
     return songs
+
 
 
 def create_mapping(songs,mapping_path):
@@ -169,31 +166,31 @@ def create_mapping(songs,mapping_path):
     """
     mappings = {}
 
-    # identifying the Vocabulary
+    # identifying the vocabulary
     songs = songs.split()
     vocabulary = list(set(songs))
 
-    
-    # creating mapping
-    for i,symbol in enumerate(vocabulary):
+    # creating mappings
+    for i, symbol in enumerate(vocabulary):
         mappings[symbol] = i
 
-    # saving vocabulary to json
+    # saving voabulary to a json file
     with open(mapping_path, "w") as fp:
-        json.dump(mappings,fp, indent=4)
+        json.dump(mappings, fp, indent=4)
+
 
 
 def convert_songs_to_int(songs):
     int_songs = []
 
-    #loading mappings
-    with open(SINGLE_FILE_DATASET,"r") as fp:
+    # loading mappings
+    with open(MAPPING_PATH, "r") as fp:
         mappings = json.load(fp)
-    
-    #casting songs string to a list
+
+    # transforming songs string to list
     songs = songs.split()
 
-    #map songs to int
+    # maping songs to int
     for symbol in songs:
         int_songs.append(mappings[symbol])
 
@@ -201,25 +198,30 @@ def convert_songs_to_int(songs):
 
 def generate_training_sequences(sequence_length):
     # [11,12,13,14,...] -> i:[11,12], t:13; i:[12,13], t:14
-
+    # print("\n\n+++++++++++++++++++++++++\n\n")
     # loading songs and mapping them to int
     songs = load(SINGLE_FILE_DATASET)
+
+    # print("\n\n----->>> songs ", songs)
     int_songs = convert_songs_to_int(songs)
-    
+    # print("\n\n----->>> int_songs ", int_songs)
     # generating the training sequences
     # eg : 100 symbols, 64 is sequence length , 100 - 64 = 36
     inputs = []
     targets = []
-
+    # print("\n\n+24982409235879034569083468435678905468456874586745980674980\n\n")
     num_sequences = len(int_songs) - sequence_length
+    print("\n\n----->>> num_sequences ", num_sequences)
     for i in range(num_sequences):
         inputs.append(int_songs[i:i+sequence_length])
         targets.append(int_songs[i+sequence_length])
-
-
+        # print("\n--> inputs : ",i, inputs)
+        # print("\n--> targets : ",i, targets,"\n")
+   
     # one-hot encoding the sequences
     vocabulary_size = len(set(int_songs))
-    inputs = keras.utils.to_categorical(inputs,num_classes=vocabulary_size)
+    # print("\n\n-------------------------------------------%%%%%%%%---------\n\n")
+    inputs = keras.utils.to_categorical(inputs, num_classes=vocabulary_size)
     targets = np.array(targets)
 
     return inputs, targets
@@ -229,13 +231,12 @@ def generate_training_sequences(sequence_length):
 
 
 def main():
-
     preprocess(KERN_DATASET_PATH)
-    songs = create_single_file_dataset(SAVE_DIR,SINGLE_FILE_DATASET,SEQUENCE_LENGTH)
-    create_mapping(songs,MAPPING_PATH)
+    songs = create_single_file_dataset(SAVE_DIR, SINGLE_FILE_DATASET, SEQUENCE_LENGTH)
+    create_mapping(songs, MAPPING_PATH)
     inputs, targets = generate_training_sequences(SEQUENCE_LENGTH)
-    a = 1
-    
+    print("\n\n\n--------     special ---------- \n\n ",inputs,"\n\n",targets,"\n\n --------------------------------")
+
 
 
 if __name__ == "__main__":
@@ -262,6 +263,7 @@ if __name__ == "__main__":
 
     # print('musicXML:  ', env['musicxmlPath'])
     # print('musescore: ', env['musescoreDirectPNGPath'])
+    
 
     # setting up enviornment for MuseScore 4
     env = environment.Environment()
@@ -290,3 +292,11 @@ if __name__ == "__main__":
     # create_mapping(songs,MAPPING_PATH)
 
     #######
+##>>>>>> for tensorflow error run following in cmd
+# set TF_ENABLE_ONEDNN_OPTS=0
+# python preprocess.py
+
+##>>>>> for WARNING:tensorflow:From C:\Users\Monil Shah\Envs\melody\Lib\site-packages\keras\src\losses.py:2976: The name tf.losses.sparse_softmax_cross_entropy is deprecated. Please use tf.compat.v1.losses.sparse_softmax_cross_entropy instead.       
+#pip install --upgrade keras
+
+
