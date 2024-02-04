@@ -6,13 +6,13 @@ import numpy as np
 import tensorflow.keras as keras
 
 
-KERN_DATASET_PATH = "deutschl/test"
+KERN_DATASET_PATH = "deutschl/erk"
 SAVE_DIR = "dataset"
 SINGLE_FILE_DATASET = "file_dataset"
 MAPPING_PATH = "mapping.json"
 SEQUENCE_LENGTH = 64
 
-#Durations are in Quarter Lenght
+#Durations are in Quarter Length
 ACCEPTABLE_DURATIONS = [
     0.25, # 16th note
     0.5,  # 8th note
@@ -26,7 +26,7 @@ ACCEPTABLE_DURATIONS = [
 
 def load_songs_in_kern(dataset_path):
     """ 
-    Loads all kern pices in datasset using music21
+    Loads all kern pices in dataset using music21
 
     """
     songs = []
@@ -235,7 +235,7 @@ def main():
     songs = create_single_file_dataset(SAVE_DIR, SINGLE_FILE_DATASET, SEQUENCE_LENGTH)
     create_mapping(songs, MAPPING_PATH)
     inputs, targets = generate_training_sequences(SEQUENCE_LENGTH)
-    print("\n\n\n--------     special ---------- \n\n ",inputs,"\n\n",targets,"\n\n --------------------------------")
+    print("\n\n\n--------     special ---------- \n\n ",len(inputs),"\n\n",len(targets),"\n\n --------------------------------")
 
 
 
