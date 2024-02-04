@@ -66,7 +66,7 @@ def transpose(song):
     if not isinstance(key, m21.key.Key):
         key = song.analyze("key")
 
-    print("Original Key : ", key)
+    # print("Original Key : ", key)
     # getting interval got transposition
     if key.mode == "major":
         interval = m21.interval.Interval(key.tonic, m21.pitch.Pitch("C"))
