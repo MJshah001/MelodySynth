@@ -4,3 +4,5 @@ Data pre-processing\file_dataset
 mapping.json
 Data pre-processing\mapping.json
 testing.py
+Data pre-processing\__pycache__
+__pycache__
