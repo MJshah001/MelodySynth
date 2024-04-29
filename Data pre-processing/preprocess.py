@@ -1,3 +1,38 @@
+"""
+This script preprocesses the dataset and prepares it for training.
+
+It does the following:
+1. Load the dataset
+2. Filter out songs that have non-acceptable durations
+3. Transpose songs to a common key
+4. Encode songs with music time series representation
+5. Save songs to text file
+6. Create a single file dataset
+7. Create a mapping for the dataset
+8. Generate training sequences
+
+- The single file dataset is a string that contains all the songs in the dataset separated by a delimiter.
+- The mapping is a json file that maps symbols of the songs to integers.
+- The training sequences are one-hot encoded sequences that will be used to train the model.
+- The single file dataset and mapping are saved to the disk to be used later for training the model.
+- The training sequences are returned by the script and can be used to train the model.
+- The script assumes that the dataset is in the kern format. The kern format is a symbolic music notation format that represents music as text.
+
+The script also assumes that the dataset is stored in a directory with the following structure:
+dataset/
+    composer1/
+        song1.krn
+        song2.krn
+        ...
+    composer2/
+        song1.krn
+        song2.krn
+        ...
+    ...         # and so on
+
+
+"""
+
 import os
 import json
 import music21 as m21
@@ -6,11 +41,11 @@ import numpy as np
 import tensorflow.keras as keras
 
 
-KERN_DATASET_PATH = "deutschl/erk"
-SAVE_DIR = "dataset"
-SINGLE_FILE_DATASET = "file_dataset"
-MAPPING_PATH = "mapping.json"
-SEQUENCE_LENGTH = 64
+KERN_DATASET_PATH = "deutschl/erk" # Path to dataset
+SAVE_DIR = "dataset"  # Path to save the encoded songs
+SINGLE_FILE_DATASET = "file_dataset" # Path to save the single file dataset
+MAPPING_PATH = "mapping.json" # Path to save the mapping
+SEQUENCE_LENGTH = 64    # Number of time steps to be considered for prediction
 
 #Durations are in Quarter Length
 ACCEPTABLE_DURATIONS = [
@@ -26,8 +61,10 @@ ACCEPTABLE_DURATIONS = [
 
 def load_songs_in_kern(dataset_path):
     """ 
-    Loads all kern pices in dataset using music21
-
+    Load all kern pieces in dataset using music21.
+    :param dataset_path (str): Path to dataset
+    :return songs (list of m21 streams): List containing all pieces
+    
     """
     songs = []
 
@@ -44,9 +81,10 @@ def load_songs_in_kern(dataset_path):
 def has_acceptable_durations(song, acceptable_durations):
     """
     Boolean that returns True if piece has all acceptable duration, False Otherwise
-
+    :param song (m21 stream): Piece to check
+    :param acceptable_durations (list of floats): Acceptable durations
+    :return (bool): True if all durations are acceptable, False Otherwise
     """
-    # for event in song.flat.notesAndRests:   # flat is depriciated
     for note in song.flatten().notesAndRests:
         if note.duration.quarterLength not in acceptable_durations:
             return False
@@ -56,6 +94,8 @@ def has_acceptable_durations(song, acceptable_durations):
 def transpose(song):
     """
     Transposes song to C major / A minor.
+    :param song (m21 stream): Piece to transpose
+    :return transposed_song (m21 stream): Transposed piece
     """
     # getting key from the song         # if it is stored
     parts = song.getElementsByClass(m21.stream.Part)
@@ -79,10 +119,15 @@ def transpose(song):
 
 
 def encode_song(song, time_step=0.25):
+    """
+    Convert a score into a time-series format
+    :param song (m21 stream): Piece to encode
+    :param time_step (float): Duration of each time step in quarter Length
+    :return encoded_song (str): String representing the encoded song
+    """
     # p= 60 , d=1.0 -> ["60", "_","_","_" ]
     encoded_song = []
 
-    # for event in song.flat.notesAndRests:    # flat is depriciated
     for event in song.flatten().notesAndRests:
 
         # handling notes
@@ -105,8 +150,11 @@ def encode_song(song, time_step=0.25):
     return encoded_song
 
 
-
 def preprocess(dataset_path):
+    """
+    Encodes dataset and saves it to a json file
+    :param dataset_path (str): Path to dataset
+    """
     print("\n\n dataset_path",dataset_path,"\n\n")
     # loading Folk Songs
     print("Loading songs...")
@@ -117,7 +165,7 @@ def preprocess(dataset_path):
 
         # filtering out songs that have non-acceptable durations
         if not has_acceptable_durations(song, ACCEPTABLE_DURATIONS):
-            continue
+            continue # if not acceptable then skip
 
         # transposing Songs to Cmaj/Amin
         song = transpose(song)
@@ -132,12 +180,24 @@ def preprocess(dataset_path):
 
 
 def load(file_path):
+    """
+    Load encoded song from path
+    :param file_path (str): Path to file
+    :return song (str): String representing the song
+    """
     with open(file_path, "r") as fp:
         song = fp.read()
     return song
 
 
 def create_single_file_dataset(dataset_path, file_dataset_path, sequence_length):
+    """
+    Create a single file dataset from all the encoded songs and add a delimiter between each song
+    :param dataset_path (str): Path to dataset
+    :param file_dataset_path (str): Path to file dataset
+    :param sequence_length (int): Number of time steps to consider for prediction
+    :return songs (str): String containing all dataset
+    """
 
     new_song_delimiter = "/ " * sequence_length
     songs = ""
@@ -163,6 +223,9 @@ def create_single_file_dataset(dataset_path, file_dataset_path, sequence_length)
 def create_mapping(songs,mapping_path):
     """
     creates a json file that maps symbols of song into integers.
+    :param songs (str): String containing all songs
+    :param mapping_path (str): Path to save mapping
+
     """
     mappings = {}
 
@@ -181,6 +244,12 @@ def create_mapping(songs,mapping_path):
 
 
 def convert_songs_to_int(songs):
+    """
+    Convert songs to a list of integers
+    :param songs (str): String containing all songs
+    :return int_songs (list of int): List of int representing the songs
+    """
+
     int_songs = []
 
     # loading mappings
@@ -197,30 +266,35 @@ def convert_songs_to_int(songs):
     return int_songs
 
 def generate_training_sequences(sequence_length):
-    # [11,12,13,14,...] -> i:[11,12], t:13; i:[12,13], t:14
-    # print("\n\n+++++++++++++++++++++++++\n\n")
+    """
+    Generate training sequences from the dataset
+    :param sequence_length (int): Number of time steps to consider for prediction
+    :return inputs (np.array): Training sequences
+    :return targets (np.array): Target sequence
+    """
+
+    # [1,2,3,4,...] -> input:[1,2],target:3 ;  input:[2,3], target:14
     # loading songs and mapping them to int
     songs = load(SINGLE_FILE_DATASET)
 
-    # print("\n\n----->>> songs ", songs)
     int_songs = convert_songs_to_int(songs)
-    # print("\n\n----->>> int_songs ", int_songs)
+
     # generating the training sequences
     # eg : 100 symbols, 64 is sequence length , 100 - 64 = 36
+
     inputs = []
     targets = []
-    # print("\n\n+24982409235879034569083468435678905468456874586745980674980\n\n")
     num_sequences = len(int_songs) - sequence_length
-    print("\n\n----->>> num_sequences ", num_sequences)
+    # print("\n\n----->>> num_sequences ", num_sequences)
+    
     for i in range(num_sequences):
         inputs.append(int_songs[i:i+sequence_length])
         targets.append(int_songs[i+sequence_length])
-        # print("\n--> inputs : ",i, inputs)
-        # print("\n--> targets : ",i, targets,"\n")
+
    
     # one-hot encoding the sequences
     vocabulary_size = len(set(int_songs))
-    # print("\n\n-------------------------------------------%%%%%%%%---------\n\n")
+
     inputs = keras.utils.to_categorical(inputs, num_classes=vocabulary_size)
     targets = np.array(targets)
 
@@ -235,68 +309,58 @@ def main():
     songs = create_single_file_dataset(SAVE_DIR, SINGLE_FILE_DATASET, SEQUENCE_LENGTH)
     create_mapping(songs, MAPPING_PATH)
     inputs, targets = generate_training_sequences(SEQUENCE_LENGTH)
-    print("\n\n\n--------     special ---------- \n\n ",len(inputs),"\n\n",len(targets),"\n\n --------------------------------")
-
 
 
 if __name__ == "__main__":
     
-    # env = m21.environment.Environment()
-    # print('Environment settings:')
-    # print('musicXML:  ', env['musicxmlPath'])
-    # # C:\Users\Monil Shah\Documents\GitHub\Melody-Generation-with-RNN---LSTM\Data pre-processing\C:\Program Files\MuseScore 3\bin\MuseScore3.exe
-    # print('musescore: ', env['musescoreDirectPNGPath'])
-    # # C:\Users\Monil Shah\Documents\GitHub\Melody-Generation-with-RNN---LSTM\Data pre-processing\C:\Program Files\ 3\bin\MuseScore3.exe
-    
-    # env = m21.environment.Environment(forcePlatform='darwin')
-    # us = m21.environment.UserSettings()
-    # print(us.keys())
-    # us['musicxmlPath'] = '/Applications/Finale Reader.app'
-    # us['musicxmlPath']
-
-    # env['musescoreDirectPNGPath'] = 'C:/Users/Monil Shah/Documents/GitHub/Melody-Generation-with-RNN---LSTM/Data pre-processing/C:/Program Files/MuseScore 4/bin/MuseScore4.exe'
-    # env['musicxmlPath'] = 'C:/Users/Monil Shah/Documents/GitHub/Melody-Generation-with-RNN---LSTM/Data pre-processing/C:/Program Files/MuseScore 4/bin/MuseScore4.exe'
-
-    # env['musescoreDirectPNGPath'] = 'C:/Program Files/MuseScore 4/bin/MuseScore4.exe'
-    # env['musicxmlPath'] = 'C:/Program Files/MuseScore 4/bin/MuseScore4.exe'
-
-
-    # print('musicXML:  ', env['musicxmlPath'])
-    # print('musescore: ', env['musescoreDirectPNGPath'])
-    
-
     # setting up enviornment for MuseScore 4
     env = environment.Environment()
     env['musicxmlPath'] = 'C:/Program Files/MuseScore 4/bin/MuseScore4.exe'
     env['musescoreDirectPNGPath'] = 'C:/Program Files/MuseScore 4/bin/MuseScore4.exe'
     main()
-######
-    # songs = load_songs_in_kern(KERN_DATASET_PATH)
-    # print(f"Loaded {len(songs)} songs.")
-    # song = songs[0]
-
-    # print(f"Has acceptable duration ? { has_acceptable_durations(song,ACCEPTABLE_DURATIONS)}")
-    # print("\n\n ------------------------- \n")
-    
-    # preprocess(KERN_DATASET_PATH)
-
-  
-    # transposed_song = transpose(song)
-
-    # song.show()           # original song
-    # transposed_song.show()
+      
 
 
-    # songs = create_single_file_dataset(SAVE_DIR,SINGLE_FILE_DATASET,SEQUENCE_LENGTH)
+## Note: Other possible errors and their solutions
 
-    # create_mapping(songs,MAPPING_PATH)
-
-    #######
-##>>>>>> for tensorflow error run following in cmd
+# >>>>>> for tensorflow error run following in cmd
 # set TF_ENABLE_ONEDNN_OPTS=0
 # python preprocess.py
 
-##>>>>> for WARNING:tensorflow:From C:\Users\Monil Shah\Envs\melody\Lib\site-packages\keras\src\losses.py:2976: The name tf.losses.sparse_softmax_cross_entropy is deprecated. Please use tf.compat.v1.losses.sparse_softmax_cross_entropy instead.       
-#pip install --upgrade keras
+# >>>>> for WARNING:tensorflow: The name tf.losses.sparse_softmax_cross_entropy is deprecated. Please use tf.compat.v1.losses.sparse_softmax_cross_entropy instead.       
+# pip install --upgrade keras
+
+# >>>>>> for music21 error run following in cmd
+# pip install --upgrade music21
+
+
+# >>>>> for music21.environment.EnvironmentException: Cannot find a valid application path for MuseScore. Please add it to your PATH or set it manually with environment.set('musescoreDirectPNGPath', '/path/to/your/musescore').
+# TO set the path to MuseScore in the above code use below given steps
+
+# Step1 : Option 1 : ( to print the path of MuseScore 4)
+# env = m21.environment.Environment()
+# print('Environment settings:')
+# print('musicXML:  ', env['musicxmlPath'])
+# # C:\Users\Monil Shah\Documents\GitHub\Melody-Generation-with-RNN---LSTM\Data pre-processing\C:\Program Files\MuseScore 3\bin\MuseScore3.exe
+# print('musescore: ', env['musescoreDirectPNGPath'])
+# # C:\Users\Monil Shah\Documents\GitHub\Melody-Generation-with-RNN---LSTM\Data pre-processing\C:\Program Files\ 3\bin\MuseScore3.exe
+
+# Step1: Option 2: (to print the path of MuseScore 4)
+# env = m21.environment.Environment(forcePlatform='darwin')
+# us = m21.environment.UserSettings()
+# print(us.keys())
+# us['musicxmlPath'] = '/Applications/Finale Reader.app'
+# us['musicxmlPath']
+
+# Step2 : (to set the path of MuseScore 4)
+# env['musescoreDirectPNGPath'] = 'C:/Users/Monil Shah/Documents/GitHub/Melody-Generation-with-RNN---LSTM/Data pre-processing/C:/Program Files/MuseScore 4/bin/MuseScore4.exe'
+# env['musicxmlPath'] = 'C:/Users/Monil Shah/Documents/GitHub/Melody-Generation-with-RNN---LSTM/Data pre-processing/C:/Program Files/MuseScore 4/bin/MuseScore4.exe'
+
+# env['musescoreDirectPNGPath'] = 'C:/Program Files/MuseScore 4/bin/MuseScore4.exe'
+# env['musicxmlPath'] = 'C:/Program Files/MuseScore 4/bin/MuseScore4.exe'
+
+# print('musicXML:  ', env['musicxmlPath'])
+# print('musescore: ', env['musescoreDirectPNGPath'])
+
 
 
