@@ -1,3 +1,32 @@
+"""
+This module contains a class that generates melodies using a pretrained model
+
+The MelodyGenerator class uses pretrained deep learning models to generate melodies.
+The model is trained on a dataset of melodies and is able to predict the next symbol in the melody given a sequence of previous symbols.
+The model is trained using the preprocess.py module which preprocesses the dataset and creates a mapping of symbols to integers.
+The MelodyGenerator class uses this mapping to encode and decode the symbols.
+The class has a method generate_melody that generates a melody given a seed, number of steps, maximum sequence length, and temperature. 
+The seed is a string of symbols that the melody generation process starts with.
+The number of steps is the number of symbols to be generated.
+The maximum sequence length is the number of previous symbols to consider for the next symbol prediction.
+The temperature is a parameter that controls the randomness in the prediction.
+The higher the temperature the more random the prediction.
+The class also has a method save_melody that converts a melody into a MIDI file.
+
+
+
+Example:
+    mg = MelodyGenerator()
+    seed = "55 _ _ _ 60 _ _ _ 55 _ _ _ 55 _"
+    number_of_steps = 500
+    max_sequence_length = 32
+    temperature = 0.7
+    melody = mg.generate_melody(seed, 500, SEQUENCE_LENGTH, 0.7)
+    mg.save_melody(melody)
+
+"""
+
+
 import tensorflow.keras as keras
 import json
 import numpy as np
@@ -5,14 +34,18 @@ from preprocess import SEQUENCE_LENGTH,MAPPING_PATH
 import music21 as m21
 
 class MelodyGenerator:
+    """
+    This class generates melodies using a pretrained model.
+
+    """
 
     def __init__(self, model_path="model.h5"):
+        """
+        :param model_path (str): path to the pretrained model
+        """
 
         self.model_path = model_path
         self.model = keras.models.load_model(model_path)
-        # if self.model :
-            # print(" \n\n 1> model found at ",self.model_path)
-            # print("Expected insput shape ",self.model.input_shape)
 
         with open(MAPPING_PATH, "r") as fp:
             self._mappings = json.load(fp)
@@ -20,75 +53,90 @@ class MelodyGenerator:
         self._start_symbols = ["/"] * SEQUENCE_LENGTH
 
     def generate_melody(self, seed, num_steps, max_sequence_length, temperature):
-        # print(" \n\n 2> generate_melody called with  ", seed, num_steps,max_sequence_length,temperature)
+        """
+        Generate a melody using the pretrained deep learning model.
+
+        :param seed (str): seed to start the melody generation process e.g. "55 _ _ _"
+        :param num_steps (int): number of steps to be generated
+        :param max_sequence_length (int): number of previous steps to consider for the next step
+        :param temperature (float): randomness in the prediction. The higher the temperature the more random the prediction
+
+        :return melody (list of str): a list of symbols representing the melody
+
+        """
+
         # creating a seed with start symbols
         seed = seed.split()
         melody = seed
         seed = self._start_symbols + seed
-        # print(" \n\n 3> seed initialised with : ",seed) 
-        # map seed to int
+
+        # mapping seed to integers
         seed = [self._mappings[symbol] for symbol in seed]
 
-        # print(" \n\n 4> seed mapped to : ",seed) 
-        output_symbols_test = []
-        # print("\n len(self._mappings) : ",len(self._mappings), "which includes  ", self._mappings,"\n\n")
         for i in range(num_steps):
 
             # limitng seed to max_sequence_length
             seed = seed[-max_sequence_length:]
-            # if i % 50 == 0:
-            #     print(f" \n\n seed for {i} th iteration is  : ",seed)
+
             # one-hot encoding the seed
             onehot_seed = keras.utils.to_categorical(seed, num_classes=len(self._mappings))
+
             # (1, max_sequence_length, num of symbols in the vocabulary)
-            # if i % 50 == 0:
-            #     print(f" onhot seed original dimensions for {i}th iteration is  : ",onehot_seed)
             onehot_seed = onehot_seed[np.newaxis, ...]    ## two dimensions to 3 dimensions( 1st one batch size 1)
-            # if i % 50 == 0:
-            #     print(f" onhot seed for {i}th iteration is  : ",onehot_seed)
+
             # making the prediction
             probabilities = self.model.predict(onehot_seed)[0]
 
             output_int = self._sample_with_temperature(probabilities, temperature)
-            # if i % 50 == 0:
-            #     print(f" output_int for {i}th iteration is  : ",output_int)
-            # updateing seed
+
+            # updating seed
             seed.append(output_int)
             
-            # mapping int back to our encoding
+            # mapping integer back to our encoding
             output_symbol = [k for k, v in self._mappings.items() if v == output_int][0]
 
             output_symbols_test.append(output_symbol)
 
-            # if i % 50 == 0:
-            #     print(f" output_symbol for {i}th iteration is  : ",output_symbol)
             # checking whether we are at end of melody
             if output_symbol == "/":
                 break
 
             # updating the melody
             melody.append(output_symbol)
-        #     if i % 50 == 0:
-        #         print(f"melody after {i}th iteration is  : ",melody)            
-        # print("\n\n output_symbols_test : \n", output_symbols_test)
+
         return melody
 
 
     def _sample_with_temperature(self, probabilites, temperature):
+        """
+        Samples an index from a probability array reinterpreting it using a temperature
+        :param probabilites (ndarray): an array of probabilities
+        :param temperature (float): randomness in the prediction. The higher the temperature the more random the prediction
+        :return index (int): the selected index
+            
+        """ 
 
         predictions = np.log(probabilites) / temperature
         probabilites = np.exp(predictions) / np.sum(np.exp(predictions))
 
-        choices = range(len(probabilites)) # [0, 1, 2, 3]
+        choices = range(len(probabilites)) 
         index = np.random.choice(choices, p=probabilites)
 
         return index
 
 
 
-    def save_melody(self, melody, step_duration =0.25 , format="midi", file_name = "mel2.mid"):
+    def save_melody(self, melody, step_duration =0.25 , format="midi", file_name = "generated_melody.mid"):
+        """
+        Converts a melody into a MIDI file
+        :param melody (list of str): a list of symbols representing the melody
+        :param step_duration (float): duration of each time step in quarter length
+        :param format (str): format of the file to save
+        :param file_name (str): name of the file to save
+            
+        """
 
-        # creating a music21 stream (object oriented)
+        # creating a music21 stream object
         stream = m21.stream.Stream()
 
         # parsing all symbols from melody to create note/rest objects
@@ -98,7 +146,7 @@ class MelodyGenerator:
 
         for i, symbol in enumerate(melody):
 
-            # handiling case for note/rest
+            # handling case for note/rest
             if symbol != "_" or i+1 == len(melody):
                 
                 # ensuring we are dealing with note/rest beyond the first one
