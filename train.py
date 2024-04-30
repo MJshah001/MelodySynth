@@ -48,8 +48,6 @@ MAPPING_PATH = "mapping.json" # path to the json file
 with open(MAPPING_PATH, 'r') as f:
     mapping_data = json.load(f)
 OUTPUT_UNITS = int(len(mapping_data))    # number of symbols in our json file will be the output units
-print("Output Units:", OUTPUT_UNITS)
-print("sequence length:", SEQUENCE_LENGTH)
 
 def build_model_lstm(output_units, num_units, loss, learning_rate):
     """
