@@ -25,13 +25,17 @@ Example:
     mg.save_melody(melody)
 
 """
-
-
+import tensorflow as tf
+from tensorflow.keras.optimizers import Adam
+import warnings
+warnings.filterwarnings('ignore')
 import tensorflow.keras as keras
 import json
 import numpy as np
 from preprocess import SEQUENCE_LENGTH,MAPPING_PATH
+from train import LEARNING_RATE
 import music21 as m21
+
 
 class MelodyGenerator:
     """
@@ -39,18 +43,35 @@ class MelodyGenerator:
 
     """
 
-    def __init__(self, model_path="model.h5"):
+    def __init__(self,selected_model = "LSTM", learning_rate=LEARNING_RATE):
         """
-        :param model_path (str): path to the pretrained model
-        """
+        :param selected_model (str): name of the model to be loaded
+        :param learning_rate (float): learning rate for the optimizer ( if model was trained with different tensor flow version for gpu )
 
+        """
+        model_path = f"{selected_model}_model.h5"
         self.model_path = model_path
+        self.learning_rate = learning_rate
+        self.load_and_modify_model()
         self.model = keras.models.load_model(model_path)
+        print(f"Model {selected_model} loaded successfully")
 
         with open(MAPPING_PATH, "r") as fp:
             self._mappings = json.load(fp)
 
         self._start_symbols = ["/"] * SEQUENCE_LENGTH
+
+    def load_and_modify_model(self):
+        # Load the model without compiling
+        self.model = tf.keras.models.load_model(self.model_path, compile=False)
+
+        # Change the optimizer settings
+        self.model.compile(optimizer=Adam(learning_rate=self.learning_rate), 
+                           loss='sparse_categorical_crossentropy', 
+                           metrics=['accuracy'])
+
+        # Save the model again
+        self.model.save(self.model_path)
 
     def generate_melody(self, seed, num_steps, max_sequence_length, temperature):
         """
@@ -94,8 +115,6 @@ class MelodyGenerator:
             
             # mapping integer back to our encoding
             output_symbol = [k for k, v in self._mappings.items() if v == output_int][0]
-
-            output_symbols_test.append(output_symbol)
 
             # checking whether we are at end of melody
             if output_symbol == "/":
@@ -175,15 +194,19 @@ class MelodyGenerator:
 
         # writting m21 stream to a midi file
         stream.write(format,file_name)
+        print(f"Melody saved as {file_name}")
 
 
 
 if __name__ == "__main__":
-    
-    mg = MelodyGenerator()
-    seed = "55 _ _ _ 60 _ _ _ 55 _ _ _ 55 _"
-    melody = mg.generate_melody(seed, 500, SEQUENCE_LENGTH, 0.7)
-    print(melody)
+    model_names = ['LSTM', 'Bi-LSTM', 'Stacked-LSTM', 'GRU', 'Bi-GRU', 'RNN']
+    selected_model = model_names[4]
+    mg = MelodyGenerator(selected_model)
+    seed = "55 _ 60 _ 62 _ 64 _ 65 _ 67 _ _ _ 69 _ 65 _ 64 _ _ _ 62 _ _ _ 60 _ _ _ r _"
+    number_of_steps = 500
+    temperature = 0.7
+    print(f"Generating melody using {selected_model} model with seed: {seed} and temperature: {temperature}...")
+    melody = mg.generate_melody(seed=seed, num_steps=number_of_steps,max_sequence_length=SEQUENCE_LENGTH, temperature=temperature)
     mg.save_melody(melody)
 
     
