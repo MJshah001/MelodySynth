@@ -18,9 +18,6 @@ To run the script, execute the following command:
 python train.py
 
 """
-import sys
-sys.path.insert(0, '../data_preprocessing')
-# from data_preprocessing.preprocess import generate_training_sequences, SEQUENCE_LENGTH
 from preprocess import generate_training_sequences, SEQUENCE_LENGTH
 import tensorflow.keras as keras
 import tensorflow as tf
