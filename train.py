@@ -18,8 +18,10 @@ To run the script, execute the following command:
 python train.py
 
 """
-
-from PreProcessing.preprocess import generate_training_sequences, SEQUENCE_LENGTH
+import sys
+sys.path.insert(0, '../data_preprocessing')
+# from data_preprocessing.preprocess import generate_training_sequences, SEQUENCE_LENGTH
+from preprocess import generate_training_sequences, SEQUENCE_LENGTH
 import tensorflow.keras as keras
 import tensorflow as tf
 import timeit
@@ -49,7 +51,8 @@ MAPPING_PATH = "mapping.json" # path to the json file
 with open(MAPPING_PATH, 'r') as f:
     mapping_data = json.load(f)
 OUTPUT_UNITS = int(len(mapping_data))    # number of symbols in our json file will be the output units
-
+print("Output Units:", OUTPUT_UNITS)
+print("sequence length:", SEQUENCE_LENGTH)
 
 def build_model_lstm(output_units, num_units, loss, learning_rate):
     """
