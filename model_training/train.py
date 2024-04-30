@@ -19,7 +19,7 @@ python train.py
 
 """
 
-from preprocess import generate_training_sequences, SEQUENCE_LENGTH
+from PreProcessing.preprocess import generate_training_sequences, SEQUENCE_LENGTH
 import tensorflow.keras as keras
 import tensorflow as tf
 import timeit
