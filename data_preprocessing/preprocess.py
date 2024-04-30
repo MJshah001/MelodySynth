@@ -2,7 +2,7 @@
 This script preprocesses the dataset and prepares it for training.
 
 It does the following:
-1. Load the dataset
+1. Load the data from the data source.
 2. Filter out songs that have non-acceptable durations
 3. Transpose songs to a common key
 4. Encode songs with music time series representation
@@ -30,6 +30,8 @@ dataset/
         ...
     ...         # and so on
 
+usage:
+    python preprocess.py
 
 """
 
