@@ -3,7 +3,7 @@
 
 ## Overview
 
-Monophonic Folk Melody Generation with Memory based Deep Learning Models is a project that explores the use of various deep learning models to generate melodies. The project focuses on leveraging recurrent neural networks (RNNs) such as LSTM and GRU to learn patterns from a dataset of melodies and generate new musical sequences autonomously.
+Monophonic Folk Melody Generation with Memory based Deep Learning Models is a project that explores the use of various deep learning models to generate melodies. The project focuses on leveraging recurrent neural networks (RNNs) such as LSTM, GRU and its variants to learn patterns from a dataset of melodies and generate new musical sequences autonomously.
 
 ## Features
 
