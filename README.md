@@ -76,13 +76,13 @@ These parameters can be modified directly in the script `train.py` to suit speci
 
 Users can customize the melody generation process by adjusting the following parameters:
 
-- **Seed**: The initial sequence of symbols to start the melody generation process. Users can define the seed according to their desired musical motif or starting theme.
+- `Seed`: The initial sequence of symbols to start the melody generation process. Users can define the seed according to their desired musical motif or starting theme.
 
-- **Number of Steps**: Determines the length of the generated melody in terms of the number of symbols. Adjusting this parameter allows users to control the overall duration of the melody.
+- `Number of Steps`: Determines the length of the generated melody in terms of the number of symbols. Adjusting this parameter allows users to control the overall duration of the melody.
 
-- **Maximum Sequence Length**: Defines the number of previous symbols considered for predicting the next symbol in the melody. Users can set this parameter to capture longer-term dependencies in the music generation process.
+- `Maximum Sequence Length`: Defines the number of previous symbols considered for predicting the next symbol in the melody. Users can set this parameter to capture longer-term dependencies in the music generation process.
 
-- **Temperature**: Controls the randomness in the prediction. A higher temperature leads to more random and diverse outputs, while a lower temperature results in more deterministic predictions.
+- `Temperature`: Controls the randomness in the prediction. A higher temperature leads to more random and diverse outputs, while a lower temperature results in more deterministic predictions.
 
 These parameters can be modified directly in the script `melodygenerator.py` to suit specific requirements.
 
