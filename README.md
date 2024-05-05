@@ -13,6 +13,9 @@ Monophonic Folk Melody Generation with Memory based Deep Learning Models is a pr
 - Customize the melody generation process with parameters such as seed melody, number of steps, and temperature.
 - Save generated melodies as MIDI files for further exploration and use.
 
+## Demo
+The melody generator app is hosted on streamlitshare platform you can checkout by visting https://melodygeneratorapp.streamlit.app/ .
+
 ## Installation
 1. Clone the repository:
     ```
