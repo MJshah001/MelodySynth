@@ -5,6 +5,8 @@
 
 Monophonic Folk Melody Generation with Memory based Deep Learning Models is a project that explores the use of various deep learning models to generate melodies. The project focuses on leveraging recurrent neural networks (RNNs) such as LSTM, GRU and its variants to learn patterns from a dataset of melodies and generate new musical sequences autonomously.
 
+![basic melody generation](https://github.com/MJshah001/MelodySynth/blob/main/resources/basic_melody_generation.png)
+
 ## Features
 
 - Train various deep learning models on a dataset of Kern/MIDI format melodies.
@@ -13,8 +15,19 @@ Monophonic Folk Melody Generation with Memory based Deep Learning Models is a pr
 - Customize the melody generation process with parameters such as seed melody, number of steps, and temperature.
 - Save generated melodies as MIDI files for further exploration and use.
 
-## Demo
+## Project Architecture
+
+![model architecture](https://github.com/MJshah001/MelodySynth/blob/main/resources/model_architecture.png)
+
+## Live Demo
 The melody generator app is hosted on streamlitshare platform you can checkout by visting https://melodygeneratorapp.streamlit.app/ .
+
+https://github.com/user-attachments/assets/492184aa-82e5-46c2-899c-08fbf2ac9774
+
+
+## Data Preprocessing 
+
+![data preprocessing](https://github.com/MJshah001/MelodySynth/blob/main/resources/data_preprocessing.png)
 
 ## Installation
 1. Clone the repository:
@@ -30,6 +43,7 @@ The melody generator app is hosted on streamlitshare platform you can checkout b
 1. Prepare data for model training by running the following command:
 
     ```
+    cd data_preprocessing
     python preprocess.py
     ```
 Users can customize the following paths based on their project directory and structure if needed:
@@ -46,6 +60,8 @@ These parameters can be modified directly in the script `preprocess.py` to suit 
 2. Train the model by running the following command:
 
     ```
+    cd..
+    cd model_training
     python train.py
     ```
 Follow the prompts to select the desired RNN architecture and enter training parameters.
@@ -72,6 +88,8 @@ These parameters can be modified directly in the script `train.py` to suit speci
 3. Generate new melodies using these trained models by running the following command:
 
     ```
+    cd..
+    cd melody_generation
     python melodygenerator.py
     ```
 
