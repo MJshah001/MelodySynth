@@ -137,14 +137,22 @@ We welcome contributions to enhance the Monophonic Folk Melody Generation projec
 
 1. **Fork the Repository**: Click the "Fork" button at the top right of this page to create a copy of this repository in your GitHub account.
 2. **Clone the Forked Repository**: Clone the repository to your local machine using the following command:
-   ```bash git clone https://github.com/<your-username>/MelodySynth.git```
-3. **Create a New Branch**: Create a branch for your changes:
-   ```git checkout -b your-feature-branch```
-4. **Make Your Changes**: Implement your changes, ensuring that your code is well-documented and follows the existing structure.
-5. **Commit Your Changes**: Commit your changes with a descriptive message:
-   ```git commit -m "Description of changes"```
-6. **Push the Branch**: Push your changes to your forked repository:
-   ```git push origin your-feature-branch```
-7. **Create a Pull Request**: Open a pull request to merge your changes into the main repository.
+   ```bash
+   git clone https://github.com/<your-username>/MelodySynth.git
+   ```
+4. **Create a New Branch**: Create a branch for your changes:
+   ```bash
+   git checkout -b your-feature-branch
+   ```
+6. **Make Your Changes**: Implement your changes, ensuring that your code is well-documented and follows the existing structure.
+7. **Commit Your Changes**: Commit your changes with a descriptive message:
+   ```bash
+   git commit -m "Description of changes"
+   ```
+9. **Push the Branch**: Push your changes to your forked repository:
+   ```bash
+   git push origin your-feature-branch
+   ```
+11. **Create a Pull Request**: Open a pull request to merge your changes into the main repository.
 
 For any questions or clarifications, feel free to open an issue. Thank you for your interest in contributing!
